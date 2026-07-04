@@ -24,6 +24,9 @@ from .metrics_service import MetricsService
 
 logger = logging.getLogger(__name__)
 
+# Prefer attack-labeled windows so the demo surfaces threats, alerts, and prevention.
+ATTACK_WINDOW_RATIO = 0.72
+
 
 def _row_to_flow(row: pd.Series) -> FlowRecord:
     return FlowRecord(
@@ -46,7 +49,8 @@ class LiveSimulator:
     def __init__(self) -> None:
         self._task: asyncio.Task | None = None
         self._running = False
-        self._windows: list[tuple[str, list[FlowRecord]]] = []
+        self._attack_windows: list[tuple[str, list[FlowRecord]]] = []
+        self._benign_windows: list[tuple[str, list[FlowRecord]]] = []
 
     @property
     def is_running(self) -> bool:
@@ -54,7 +58,7 @@ class LiveSimulator:
 
     @property
     def window_count(self) -> int:
-        return len(self._windows)
+        return len(self._attack_windows) + len(self._benign_windows)
 
     def _load_samples(self) -> None:
         path = resolve_simulator_csv_path()
@@ -66,22 +70,46 @@ class LiveSimulator:
         df = pd.read_csv(path, nrows=LIVE_SIMULATOR_SAMPLE_ROWS)
         df.columns = [c.strip() for c in df.columns]
 
-        by_victim: dict[str, list[FlowRecord]] = {}
+        attack_by_victim: dict[str, list[FlowRecord]] = {}
+        benign_by_victim: dict[str, list[FlowRecord]] = {}
+
         for _, row in df.iterrows():
             try:
                 flow = _row_to_flow(row)
             except (KeyError, ValueError, TypeError):
                 continue
-            by_victim.setdefault(flow.destination_ip, []).append(flow)
+            label = str(row.get("Label", "BENIGN")).strip().upper()
+            bucket = attack_by_victim if label != "BENIGN" else benign_by_victim
+            bucket.setdefault(flow.destination_ip, []).append(flow)
 
-        self._windows = [(v, flows) for v, flows in by_victim.items() if len(flows) >= GRAPH_MIN_FLOWS]
-        logger.info("Live simulator: ready with %d victim traffic windows", len(self._windows))
+        self._attack_windows = [
+            (v, flows) for v, flows in attack_by_victim.items() if len(flows) >= GRAPH_MIN_FLOWS
+        ]
+        self._benign_windows = [
+            (v, flows) for v, flows in benign_by_victim.items() if len(flows) >= GRAPH_MIN_FLOWS
+        ]
+        logger.info(
+            "Live simulator: %d attack windows, %d benign windows",
+            len(self._attack_windows),
+            len(self._benign_windows),
+        )
+
+    def _pick_window(self) -> tuple[str, list[FlowRecord]] | None:
+        use_attack = random.random() < ATTACK_WINDOW_RATIO and self._attack_windows
+        if use_attack:
+            return random.choice(self._attack_windows)
+        if self._benign_windows:
+            return random.choice(self._benign_windows)
+        if self._attack_windows:
+            return random.choice(self._attack_windows)
+        return None
 
     async def _tick(self) -> None:
-        if not self._windows:
+        picked = self._pick_window()
+        if not picked:
             return
 
-        victim, pool = random.choice(self._windows)
+        victim, pool = picked
         batch_size = random.randint(GRAPH_MIN_FLOWS, min(28, len(pool)))
         flows = random.sample(pool, batch_size)
         model = random.choice(["gcn", "gat"] if LOAD_GAT else ["gcn"])

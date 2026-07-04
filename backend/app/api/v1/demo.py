@@ -18,6 +18,8 @@ async def demo_status(_user=Depends(require_roles(UserRole.admin, UserRole.analy
         "simulator_enabled": LIVE_SIMULATOR_ENABLED,
         "simulator_running": live_simulator.is_running,
         "traffic_windows": live_simulator.window_count,
+        "attack_windows": len(live_simulator._attack_windows),
+        "benign_windows": len(live_simulator._benign_windows),
         "simulator_interval_seconds": LIVE_SIMULATOR_INTERVAL_SECONDS,
         "models_loaded": inference_engine._loaded,
         "models": {
