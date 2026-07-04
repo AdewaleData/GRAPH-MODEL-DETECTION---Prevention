@@ -129,7 +129,7 @@ class DetectionService:
         )
 
         alert_result = await self.alert_service.maybe_create_alert(session, victim_ip, prob, is_attack, row.id)
-        if alert_result and is_attack and not is_simulator:
+        if alert_result and is_attack:
             severity = alert_result["severity"]
             await mitigation_service.maybe_auto_mitigate(
                 session,

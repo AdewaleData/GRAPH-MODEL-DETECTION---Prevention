@@ -89,6 +89,8 @@ class MitigationService:
                 detection_to_action_ms=elapsed_ms,
             )
             payloads.append(record)
+            if action_type == MitigationActionType.block:
+                _flows_blocked_count += sum(1 for f in flows if f.source_ip == source_ip)
         return payloads
 
     async def apply_manual(
