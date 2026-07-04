@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, ApiError } from "@/lib/api";
+import { formatConnectionError } from "@/lib/connection-error";
 import { useAuthStore } from "@/store/auth-store";
 
 export default function RegisterPage() {
@@ -29,7 +30,7 @@ export default function RegisterPage() {
     } catch (err) {
       if (err instanceof ApiError) setError(err.message);
       else if (err instanceof TypeError && err.message.includes("fetch"))
-        setError("Cannot reach the server. Start the backend on port 8000, then try again.");
+        setError(formatConnectionError());
       else setError("Could not create account.");
     } finally {
       setLoading(false);

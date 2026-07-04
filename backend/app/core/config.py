@@ -80,4 +80,6 @@ UVICORN_WORKERS = int(os.getenv("UVICORN_WORKERS", "1"))
 
 _extra_origins = os.getenv("CORS_ORIGINS", "")
 if _extra_origins:
-    CORS_ORIGINS = [o.strip() for o in _extra_origins.split(",") if o.strip()]
+    merged = {o.strip() for o in CORS_ORIGINS}
+    merged.update(o.strip() for o in _extra_origins.split(",") if o.strip())
+    CORS_ORIGINS = sorted(merged)

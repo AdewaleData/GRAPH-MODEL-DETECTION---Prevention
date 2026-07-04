@@ -139,9 +139,12 @@ Add:
 
 | Name | Value |
 |------|--------|
+| `BACKEND_URL` | `https://halal-graph-api.onrender.com` |
 | `NEXT_PUBLIC_API_URL` | `https://halal-graph-api.onrender.com` |
 
-Use **your** Render URL from Step 6. **No trailing slash.**
+Use **your** Render URL from Step 6. **No trailing slash.**  
+`BACKEND_URL` powers the Vercel proxy (login works even if you forget `NEXT_PUBLIC_API_URL`).  
+`NEXT_PUBLIC_API_URL` is still needed for **WebSockets** (live graph/alerts).
 
 ### Step 10: Deploy
 
