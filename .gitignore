@@ -1,8 +1,8 @@
-artifacts/
+# Ignore artifacts except trained models (needed for Render deploy)
+artifacts/*
 !artifacts/models/
+!artifacts/models/**
 artifacts/backend/
-artifacts/figures/
-artifacts/experiments/
 
 # Dataset (too large for GitHub — not needed for Render deploy)
 CICDDoS.csv
