@@ -5,7 +5,7 @@ services:
   - type: web
     name: halal-graph-api
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile
+    dockerfilePath: ./Dockerfile
     dockerContext: .
     plan: starter
     region: frankfurt

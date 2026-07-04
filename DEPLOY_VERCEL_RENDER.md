@@ -67,7 +67,8 @@ Replace `YOUR_USERNAME` with your GitHub username.
 | **Region** | Choose closest to you (e.g. Frankfurt) |
 | **Branch** | `main` |
 | **Runtime** | **Docker** |
-| **Dockerfile Path** | `backend/Dockerfile` |
+| **Root Directory** | *(leave empty — repo root)* |
+| **Dockerfile Path** | `Dockerfile` |
 | **Docker Context** | `.` |
 | **Instance Type** | **Starter** ($7/mo) — recommended; free tier often fails with PyTorch |
 
