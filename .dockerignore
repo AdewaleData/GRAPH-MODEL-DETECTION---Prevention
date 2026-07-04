@@ -1,0 +1,32 @@
+# Frontend — never copy host node_modules into the image
+frontend/node_modules
+frontend/.next
+frontend/out
+frontend/.turbo
+
+# Backend / Python
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.venv
+**/venv
+
+# Git & IDE
+.git
+.gitignore
+.vscode
+.cursor
+*.md
+!backend/README.md
+
+# Large / local-only
+notebooks
+CICDDoS.csv
+artifacts/backend
+artifacts/figures
+artifacts/experiments
+*.ipynb
+
+# Env secrets
+.env
+.env.*

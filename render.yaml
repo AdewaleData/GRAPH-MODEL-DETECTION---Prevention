@@ -1,0 +1,29 @@
+# Render Blueprint — Halal Graph API (FastAPI + GNN)
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: halal-graph-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /health
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PRODUCTION
+        value: "true"
+      - key: LIVE_SIMULATOR_ENABLED
+        value: "false"
+      - key: MITIGATION_AUTO_ENABLED
+        value: "true"
+      - key: MITIGATION_MODE
+        value: simulated
+      - key: MITIGATION_FILTER_BLOCKED_FLOWS
+        value: "true"
+      - key: CORS_ORIGINS
+        sync: false
+      - key: PYTHONPATH
+        value: /app/src:/app/backend

@@ -1,0 +1,25 @@
+artifacts/
+!artifacts/models/
+artifacts/backend/
+artifacts/figures/
+artifacts/experiments/
+
+# Dataset (too large for GitHub — not needed for Render deploy)
+CICDDoS.csv
+
+# Node / Next.js
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+.env
+.env.*
+!.env.example
+!.env.production.example
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+.docker/

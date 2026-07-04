@@ -1,0 +1,11 @@
+# TLS certificates go here (Let's Encrypt or your CA)
+# Required files for HTTPS:
+#   fullchain.pem
+#   privkey.pem
+#
+# Generate with certbot on the server:
+#   sudo certbot certonly --webroot -w ./deploy/certbot-www -d your-domain.com
+#   sudo cp /etc/letsencrypt/live/your-domain.com/fullchain.pem deploy/certs/
+#   sudo cp /etc/letsencrypt/live/your-domain.com/privkey.pem deploy/certs/
+#
+# Until certs exist, NGINX serves HTTP on port 80 only.
