@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { API_BASE_URL, WS_BASE_URL } from "@/lib/config";
+import { LOCAL_DEV_API } from "@/lib/config-constants";
+import { toWsUrl } from "@/lib/ws-url";
 
 export type BackendConfig = {
   apiUrl: string;
@@ -14,22 +15,12 @@ let cached: BackendConfig | null = null;
 export async function resolveBackendConfig(): Promise<BackendConfig> {
   if (cached) return cached;
 
-  const publicApi = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
-  if (publicApi) {
-    cached = { apiUrl: publicApi, wsUrl: publicApi.replace(/^http/, "ws") };
-    return cached;
-  }
-
-  if (API_BASE_URL) {
-    cached = { apiUrl: API_BASE_URL, wsUrl: WS_BASE_URL };
-    return cached;
-  }
-
   if (typeof window !== "undefined" && process.env.NODE_ENV === "production") {
     try {
       const res = await fetch("/api/backend-config");
       if (res.ok) {
-        cached = (await res.json()) as BackendConfig;
+        const data = (await res.json()) as BackendConfig;
+        cached = { apiUrl: data.apiUrl, wsUrl: toWsUrl(data.apiUrl) };
         return cached;
       }
     } catch {
@@ -37,7 +28,19 @@ export async function resolveBackendConfig(): Promise<BackendConfig> {
     }
   }
 
-  cached = { apiUrl: "http://127.0.0.1:8000", wsUrl: "ws://127.0.0.1:8000" };
+  const publicApi = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+  if (publicApi) {
+    cached = { apiUrl: publicApi, wsUrl: toWsUrl(publicApi) };
+    return cached;
+  }
+
+  const { API_BASE_URL } = await import("@/lib/config");
+  if (API_BASE_URL) {
+    cached = { apiUrl: API_BASE_URL, wsUrl: toWsUrl(API_BASE_URL) };
+    return cached;
+  }
+
+  cached = { apiUrl: LOCAL_DEV_API, wsUrl: toWsUrl(LOCAL_DEV_API) };
   return cached;
 }
 

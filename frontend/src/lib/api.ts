@@ -1,6 +1,7 @@
 import { API_BASE_URL, API_V1 } from "./config";
 import type {
   Alert,
+  DemoStatus,
   HealthStatus,
   LiveGraph,
   MetricsSummary,
@@ -76,6 +77,8 @@ export const api = {
     }),
 
   metrics: (token: string) => request<MetricsSummary>("/metrics", {}, token),
+
+  demoStatus: (token: string) => request<DemoStatus>("/demo/status", {}, token),
 
   history: (token: string, limit = 50) =>
     request<PredictionHistory[]>(`/metrics/history?limit=${limit}`, {}, token),

@@ -21,6 +21,7 @@ interface RealtimeState {
   revokeMitigation: (recordId: number) => void;
   setLiveGraph: (graph: LiveGraph) => void;
   pushTraffic: (event: TrafficEvent) => void;
+  syncTrafficFromHistory: (events: TrafficEvent[]) => void;
   setConnected: (channel: string, value: boolean) => void;
   setHeartbeat: (ts: string) => void;
   setAlerts: (alerts: Alert[]) => void;
@@ -83,6 +84,7 @@ export const useRealtimeStore = create<RealtimeState>((set) => ({
     set((s) => ({
       trafficEvents: [{ ...event, ts: event.ts || new Date().toISOString() }, ...s.trafficEvents].slice(0, 80),
     })),
+  syncTrafficFromHistory: (events) => set({ trafficEvents: events }),
   setConnected: (channel, value) =>
     set((s) => ({ connected: { ...s.connected, [channel]: value } })),
   setHeartbeat: (ts) => set({ lastHeartbeat: ts }),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Activity, AlertTriangle, Brain, Gauge, ShieldAlert, Zap } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { MetricCard } from "@/components/dashboard/metric-card";
@@ -11,8 +11,10 @@ import { SeverityBadge } from "@/components/dashboard/severity-badge";
 import { api } from "@/lib/api";
 import { formatPercent } from "@/lib/utils";
 import { displayMetric, useMetrics } from "@/hooks/use-metrics";
+import { useBackendConfig } from "@/hooks/use-backend-config";
 import { useAuthStore } from "@/store/auth-store";
 import { useRealtimeStore } from "@/store/realtime-store";
+import type { DemoStatus } from "@/types/api";
 
 export default function DashboardPage() {
   const token = useAuthStore((s) => s.token)!;
@@ -23,10 +25,19 @@ export default function DashboardPage() {
   const trafficEvents = useRealtimeStore((s) => s.trafficEvents);
   const connected = useRealtimeStore((s) => s.connected);
   const liveFeeds = Object.values(connected).filter(Boolean).length;
+  const backendConfig = useBackendConfig();
+  const [demo, setDemo] = useState<DemoStatus | null>(null);
 
   useEffect(() => {
     api.alerts(token, false).then(setAlerts).catch(console.error);
   }, [token, setAlerts]);
+
+  useEffect(() => {
+    const loadDemo = () => api.demoStatus(token).then(setDemo).catch(() => setDemo(null));
+    loadDemo();
+    const t = setInterval(loadDemo, 10000);
+    return () => clearInterval(t);
+  }, [token]);
 
   useEffect(() => {
     if (trafficEvents.length) refresh();
@@ -63,10 +74,26 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {!error && loaded && metrics?.total_predictions === 0 && liveFeeds === 0 && (
-          <div className="rounded-lg border border-secondary/30 bg-secondary/10 px-4 py-3 text-sm text-secondary">
-            Waiting for live traffic. The backend simulator streams CICDDoS samples every few seconds
-            once deployed with LIVE_SIMULATOR_ENABLED=true.
+        {!error && loaded && (metrics?.total_predictions ?? 0) === 0 && (
+          <div className="rounded-lg border border-secondary/30 bg-secondary/10 px-4 py-3 text-sm text-secondary space-y-1">
+            <p>No scans recorded yet. Data refreshes every 4 seconds via the API.</p>
+            {demo && (
+              <p className="text-xs text-muted">
+                Simulator: {demo.simulator_running ? "running" : "stopped"}
+                {demo.simulator_enabled ? "" : " (disabled on server)"}
+                {" · "}
+                {demo.traffic_windows} traffic windows
+                {" · "}
+                GCN {demo.models.gcn ? "loaded" : "missing"}
+                {backendConfig ? ` · API ${backendConfig.apiUrl}` : ""}
+                {liveFeeds === 0 ? " · WebSockets offline (REST polling active)" : ` · ${liveFeeds}/5 live feeds`}
+              </p>
+            )}
+            {!demo?.models.gcn && (
+              <p className="text-xs text-warn">
+                Backend model not loaded. Upgrade Render to Standard (2 GB) or check deploy logs for OOM errors.
+              </p>
+            )}
           </div>
         )}
 

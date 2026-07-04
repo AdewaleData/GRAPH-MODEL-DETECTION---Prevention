@@ -1,5 +1,6 @@
 "use client";
 
+import { useLivePolling } from "@/hooks/use-live-polling";
 import { useWebSockets } from "@/hooks/use-websocket";
 import { useAuthStore } from "@/store/auth-store";
 import { Toaster } from "sonner";
@@ -7,6 +8,7 @@ import { Toaster } from "sonner";
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
   useWebSockets(!!token);
+  useLivePolling(token);
 
   return (
     <>

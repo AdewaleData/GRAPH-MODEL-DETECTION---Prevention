@@ -1,6 +1,7 @@
 /** API configuration — override via NEXT_PUBLIC_* env at build time */
 
-const LOCAL_DEV_API = "http://127.0.0.1:8000";
+import { toWsUrl } from "./ws-url";
+import { LOCAL_DEV_API } from "./config-constants";
 
 /** Direct backend URL when set (required for WebSockets on Vercel). */
 const PUBLIC_API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
@@ -17,7 +18,7 @@ export const API_V1 = `${API_BASE_URL}/api/v1`;
 
 /** WebSockets must hit the backend directly — proxy does not support WS. */
 const WS_HTTP_BASE = PUBLIC_API ?? (API_BASE_URL || LOCAL_DEV_API);
-export const WS_BASE_URL = WS_HTTP_BASE.replace(/^http/, "ws");
+export const WS_BASE_URL = toWsUrl(WS_HTTP_BASE);
 
 export const WS_CHANNELS = {
   alerts: `${WS_BASE_URL}/ws/alerts`,

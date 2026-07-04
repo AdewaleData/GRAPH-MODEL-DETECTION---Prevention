@@ -9,7 +9,13 @@ import random
 
 import pandas as pd
 
-from ..core.config import GRAPH_MIN_FLOWS, LIVE_SIMULATOR_INTERVAL_SECONDS, LIVE_SIMULATOR_SAMPLE_ROWS, resolve_simulator_csv_path
+from ..core.config import (
+    GRAPH_MIN_FLOWS,
+    LIVE_SIMULATOR_INTERVAL_SECONDS,
+    LIVE_SIMULATOR_SAMPLE_ROWS,
+    LOAD_GAT,
+    resolve_simulator_csv_path,
+)
 from ..db.database import SessionLocal
 from ..schemas.predict import FlowRecord, PredictRequest
 from ..websockets.manager import ws_manager
@@ -42,6 +48,14 @@ class LiveSimulator:
         self._running = False
         self._windows: list[tuple[str, list[FlowRecord]]] = []
 
+    @property
+    def is_running(self) -> bool:
+        return self._running
+
+    @property
+    def window_count(self) -> int:
+        return len(self._windows)
+
     def _load_samples(self) -> None:
         path = resolve_simulator_csv_path()
         if not path.exists():
@@ -70,7 +84,7 @@ class LiveSimulator:
         victim, pool = random.choice(self._windows)
         batch_size = random.randint(GRAPH_MIN_FLOWS, min(28, len(pool)))
         flows = random.sample(pool, batch_size)
-        model = random.choice(["gcn", "gcn", "gat"])
+        model = random.choice(["gcn", "gat"] if LOAD_GAT else ["gcn"])
 
         request = PredictRequest(flows=flows, victim_ip=victim, model=model)
         metrics_svc = MetricsService()
