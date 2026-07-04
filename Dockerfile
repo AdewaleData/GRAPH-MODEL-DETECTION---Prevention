@@ -16,7 +16,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     LIVE_SIMULATOR_SAMPLE_ROWS=5000 \
     LIVE_SIMULATOR_INTERVAL_SECONDS=1 \
     LIVE_SIMULATOR_TICKS_PER_INTERVAL=3 \
-    LIVE_SIMULATOR_ATTACKS_PER_10=6
+    LIVE_SIMULATOR_ATTACKS_PER_10=4
 
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
     && pip install --no-cache-dir "numpy>=1.26.4,<2.0.0" \

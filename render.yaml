@@ -28,7 +28,7 @@ services:
       - key: LIVE_SIMULATOR_TICKS_PER_INTERVAL
         value: "3"
       - key: LIVE_SIMULATOR_ATTACKS_PER_10
-        value: "6"
+        value: "4"
       - key: LOAD_GCN
         value: "true"
       - key: LOAD_GAT

@@ -113,7 +113,7 @@ class LiveSimulator:
         )
 
     def _refresh_attack_schedule(self, block: int) -> None:
-        """60% attack + 40% benign slots per block of 10, shuffled each block."""
+        """40% attack + 60% benign slots per block of 10, shuffled each block."""
         if block == self._schedule_block:
             return
         self._schedule_block = block
@@ -123,7 +123,7 @@ class LiveSimulator:
         self._attack_slots = pattern
 
     def _pick_window(self) -> tuple[tuple[str, list[FlowRecord]] | None, bool]:
-        """6 of every 10 ticks use attack-labeled traffic (60/40 mix, shuffled order)."""
+        """4 of every 10 ticks use attack-labeled traffic (60% normal / 40% threat mix)."""
         self._tick_counter += 1
         slot = (self._tick_counter - 1) % 10
         block = (self._tick_counter - 1) // 10
@@ -148,7 +148,13 @@ class LiveSimulator:
         flows = random.sample(pool, batch_size)
         model = random.choice(["gcn", "gat"] if LOAD_GAT else ["gcn"])
 
-        request = PredictRequest(flows=flows, victim_ip=victim, model=model)
+        request = PredictRequest(
+            flows=flows,
+            victim_ip=victim,
+            model=model,
+            simulator_source=True,
+            simulator_labeled_attack=demo_attack_traffic,
+        )
         metrics_svc = MetricsService()
 
         async with SessionLocal() as session:

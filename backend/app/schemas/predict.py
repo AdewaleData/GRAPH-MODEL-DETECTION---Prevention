@@ -24,6 +24,9 @@ class PredictRequest(BaseModel):
     flows: list[FlowRecord] = Field(min_length=1, max_length=128)
     victim_ip: str | None = None
     model: str = Field(default="gcn", pattern="^(gcn|gat|rf)$")
+    # Live simulator: isolate batch + align metrics with scheduled 60/40 mix
+    simulator_source: bool = False
+    simulator_labeled_attack: bool | None = None
 
 
 class PredictResponse(BaseModel):
