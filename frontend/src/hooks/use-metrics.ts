@@ -26,9 +26,10 @@ export function useMetrics(token: string) {
     refresh();
     const t = setInterval(refresh, 5000);
     const onSummary = (e: Event) => {
-      const detail = (e as CustomEvent<MetricsSummary>).detail;
-      if (detail?.total_predictions !== undefined) {
-        setMetrics(detail);
+      const raw = (e as CustomEvent<MetricsSummary & { type?: string }>).detail;
+      if (raw?.total_predictions !== undefined) {
+        const { type: _type, ...summary } = raw;
+        setMetrics(summary as MetricsSummary);
         setError(null);
         setLoading(false);
       }

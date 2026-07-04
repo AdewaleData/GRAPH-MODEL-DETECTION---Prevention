@@ -51,6 +51,8 @@ export interface DemoStatus {
   simulator_enabled: boolean;
   simulator_running: boolean;
   traffic_windows: number;
+  attack_windows?: number;
+  benign_windows?: number;
   simulator_interval_seconds: number;
   models_loaded: boolean;
   models: { gcn: boolean; gat: boolean; rf: boolean };

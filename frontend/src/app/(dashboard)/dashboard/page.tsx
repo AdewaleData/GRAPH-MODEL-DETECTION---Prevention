@@ -1,22 +1,35 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { Activity, AlertTriangle, Brain, Gauge, ShieldAlert, Zap } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrafficChart } from "@/components/charts/traffic-chart";
-import { CytoscapeGraph } from "@/components/graph/cytoscape-graph";
 import { SeverityBadge } from "@/components/dashboard/severity-badge";
+import { PageErrorBoundary } from "@/components/ui/page-error-boundary";
 import { api } from "@/lib/api";
-import { formatPercent } from "@/lib/utils";
+import { formatMs, formatPercent } from "@/lib/utils";
 import { displayMetric, useMetrics } from "@/hooks/use-metrics";
 import { useBackendConfig } from "@/hooks/use-backend-config";
 import { useAuthStore } from "@/store/auth-store";
 import { useRealtimeStore } from "@/store/realtime-store";
 import type { DemoStatus } from "@/types/api";
 
-export default function DashboardPage() {
+const CytoscapeGraph = dynamic(
+  () => import("@/components/graph/cytoscape-graph").then((m) => m.CytoscapeGraph),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full min-h-[280px] items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted">
+        Loading graph…
+      </div>
+    ),
+  },
+);
+
+function DashboardContent() {
   const token = useAuthStore((s) => s.token)!;
   const { metrics, loading, error, refresh } = useMetrics(token);
   const alerts = useRealtimeStore((s) => s.alerts);
@@ -47,8 +60,7 @@ export default function DashboardPage() {
   const chartData = useMemo(() => {
     const buckets: Record<string, { attacks: number; benign: number }> = {};
     for (let i = 11; i >= 0; i--) {
-      const label = `${i * 5}s`;
-      buckets[label] = { attacks: 0, benign: 0 };
+      buckets[`${i * 5}s`] = { attacks: 0, benign: 0 };
     }
     trafficEvents.slice(0, 60).forEach((e, idx) => {
       const label = `${Math.floor(idx / 5) * 5}s`;
@@ -61,13 +73,15 @@ export default function DashboardPage() {
       .reverse();
   }, [trafficEvents]);
 
+  const attackWindows = demo?.attack_windows;
+
   return (
     <>
       <Header
         title="Security Overview"
         subtitle="Real-time DDoS detection using Graph Neural Networks"
       />
-      <main className="flex-1 overflow-y-auto p-6 space-y-6">
+      <main className="min-h-0 flex-1 overflow-y-auto p-6 space-y-6">
         {error && (
           <div className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
             Metrics unavailable: {error}. Check API connection and sign in again if needed.
@@ -80,18 +94,13 @@ export default function DashboardPage() {
             {demo && (
               <p className="text-xs text-muted">
                 Simulator: {demo.simulator_running ? "running" : "stopped"}
-                {demo.simulator_enabled ? "" : " (disabled on server)"}
                 {" · "}
-                {demo.traffic_windows} traffic windows
+                {attackWindows ?? demo.traffic_windows} traffic windows
+                {attackWindows === 0 ? " (redeploy Render with latest sample CSV)" : ""}
                 {" · "}
                 GCN {demo.models.gcn ? "loaded" : "missing"}
                 {backendConfig ? ` · API ${backendConfig.apiUrl}` : ""}
-                {liveFeeds === 0 ? " · WebSockets offline (REST polling active)" : ` · ${liveFeeds}/5 live feeds`}
-              </p>
-            )}
-            {!demo?.models.gcn && (
-              <p className="text-xs text-warn">
-                Backend model not loaded. Upgrade Render to Standard (2 GB) or check deploy logs for OOM errors.
+                {liveFeeds === 0 ? " · REST polling active" : ` · ${liveFeeds}/5 live feeds`}
               </p>
             )}
           </div>
@@ -108,7 +117,7 @@ export default function DashboardPage() {
           <MetricCard
             title="Threats Found"
             value={displayMetric(metrics?.attack_predictions, loaded)}
-            subtitle={metrics ? `${formatPercent(metrics.attack_rate)} of traffic` : "Attack rate"}
+            subtitle={loaded ? `${formatPercent(metrics?.attack_rate)} of traffic` : "Attack rate"}
             icon={ShieldAlert}
             trend="up"
             accent="danger"
@@ -128,21 +137,19 @@ export default function DashboardPage() {
             title="Active Blocks"
             value={displayMetric(metrics?.active_mitigations, loaded)}
             subtitle={
-              metrics ? `${metrics.flows_blocked} flows filtered` : "Prevention rules"
+              loaded
+                ? `${metrics?.flows_blocked ?? 0} flows filtered`
+                : "Prevention rules"
             }
             icon={ShieldAlert}
             accent="primary"
           />
           <MetricCard
             title="Response Time"
-            value={
-              loaded && metrics
-                ? `${metrics.avg_latency_ms.toFixed(1)}ms`
-                : displayMetric(null, loaded, "...")
-            }
+            value={loaded ? formatMs(metrics?.avg_latency_ms) : "..."}
             subtitle={
               metrics?.avg_time_to_mitigate_ms
-                ? `Mitigate in ${metrics.avg_time_to_mitigate_ms.toFixed(0)}ms`
+                ? `Mitigate in ${formatMs(metrics.avg_time_to_mitigate_ms)}`
                 : "Average per scan"
             }
             icon={Zap}
@@ -173,7 +180,7 @@ export default function DashboardPage() {
               {["GCN", "GAT", "Random Forest"].map((m) => (
                 <div
                   key={m}
-                  className="flex items-center justify-between rounded-lg border border-border bg-surface/50 px-3 py-2.5 transition-colors hover:border-primary/30"
+                  className="flex items-center justify-between rounded-lg border border-border bg-surface/50 px-3 py-2.5"
                 >
                   <span className="text-sm text-white">{m}</span>
                   <span className="flex items-center gap-2 text-xs text-success">
@@ -182,9 +189,6 @@ export default function DashboardPage() {
                   </span>
                 </div>
               ))}
-              <p className="text-xs text-muted">
-                Graph models analyze traffic windows per destination IP for coordinated attack patterns.
-              </p>
             </CardContent>
           </Card>
         </div>
@@ -211,7 +215,7 @@ export default function DashboardPage() {
               {alerts.slice(0, 8).map((a) => (
                 <div
                   key={a.id}
-                  className="flex items-start justify-between gap-2 rounded-lg border border-border bg-surface/40 p-3 transition-all hover:border-secondary/30"
+                  className="flex items-start justify-between gap-2 rounded-lg border border-border bg-surface/40 p-3"
                 >
                   <div>
                     <p className="text-sm font-medium text-white">{a.title}</p>
@@ -230,5 +234,15 @@ export default function DashboardPage() {
         </div>
       </main>
     </>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <PageErrorBoundary label="Dashboard">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <DashboardContent />
+      </div>
+    </PageErrorBoundary>
   );
 }
