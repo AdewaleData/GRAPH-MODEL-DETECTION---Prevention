@@ -7,6 +7,7 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    dockerCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir /app/backend
     plan: starter
     region: frankfurt
     healthCheckPath: /health
