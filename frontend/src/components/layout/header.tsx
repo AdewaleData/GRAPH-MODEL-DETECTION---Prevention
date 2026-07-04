@@ -15,12 +15,12 @@ export function Header({ title, subtitle }: { title: string; subtitle?: string }
   const unacked = alerts.filter((a) => !a.acknowledged).length;
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-surface/50 px-6 backdrop-blur-md">
-      <div>
-        <h1 className="text-lg font-semibold text-white">{title}</h1>
-        {subtitle && <p className="text-xs text-muted">{subtitle}</p>}
+    <header className="flex h-14 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-surface/50 px-4 backdrop-blur-md sm:h-16 sm:px-6">
+      <div className="min-w-0 flex-1">
+        <h1 className="truncate text-base font-semibold text-white sm:text-lg">{title}</h1>
+        {subtitle && <p className="truncate text-[11px] text-muted sm:text-xs">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
         <Button variant="ghost" size="sm" className="relative" onClick={() => router.push("/alerts")}>
           <Bell className="h-4 w-4" />
           {unacked > 0 && (

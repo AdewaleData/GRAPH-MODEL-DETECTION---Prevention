@@ -22,7 +22,7 @@ export function formatDetectionConfidence(
   if (!Number.isFinite(p)) return "0.0%";
   const frac = p > 1 ? p / 100 : p;
   const confidence = isAttack ? frac : 1 - frac;
-  return `${Math.max(0, Math.min(1, confidence)) * 100).toFixed(1)}%`;
+  return `${(Math.max(0, Math.min(1, confidence)) * 100).toFixed(1)}%`;
 }
 
 export function formatMs(value: number | null | undefined) {

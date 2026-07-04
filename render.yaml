@@ -24,11 +24,11 @@ services:
       - key: LIVE_SIMULATOR_SAMPLE_ROWS
         value: "5000"
       - key: LIVE_SIMULATOR_INTERVAL_SECONDS
-        value: "2"
+        value: "1"
       - key: LIVE_SIMULATOR_TICKS_PER_INTERVAL
-        value: "5"
+        value: "3"
       - key: LIVE_SIMULATOR_ATTACKS_PER_10
-        value: "4"
+        value: "6"
       - key: LOAD_GCN
         value: "true"
       - key: LOAD_GAT

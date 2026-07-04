@@ -113,7 +113,7 @@ class LiveSimulator:
         )
 
     def _refresh_attack_schedule(self, block: int) -> None:
-        """4 attack + 6 benign slots per block of 10, shuffled each block."""
+        """60% attack + 40% benign slots per block of 10, shuffled each block."""
         if block == self._schedule_block:
             return
         self._schedule_block = block
@@ -123,7 +123,7 @@ class LiveSimulator:
         self._attack_slots = pattern
 
     def _pick_window(self) -> tuple[tuple[str, list[FlowRecord]] | None, bool]:
-        """Exactly 4 of every 10 ticks use attack-labeled traffic (mixed order)."""
+        """6 of every 10 ticks use attack-labeled traffic (60/40 mix, shuffled order)."""
         self._tick_counter += 1
         slot = (self._tick_counter - 1) % 10
         block = (self._tick_counter - 1) // 10

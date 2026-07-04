@@ -81,7 +81,7 @@ function DashboardContent() {
         title="Security Overview"
         subtitle="Real-time DDoS detection using Graph Neural Networks"
       />
-      <main className="min-h-0 flex-1 overflow-y-auto p-6 space-y-6">
+      <main className="min-h-0 flex-1 overflow-y-auto p-4 space-y-4 sm:p-5 sm:space-y-5 lg:p-6 lg:space-y-6">
         {error && (
           <div className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
             Metrics unavailable: {error}. Check API connection and sign in again if needed.
@@ -106,7 +106,7 @@ function DashboardContent() {
           </div>
         )}
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-5">
           <MetricCard
             title="Total Scans"
             value={displayMetric(metrics?.total_predictions, loaded)}
@@ -157,8 +157,8 @@ function DashboardContent() {
           />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
+        <div className="grid gap-4 lg:grid-cols-5 lg:gap-5">
+          <Card className="lg:col-span-3">
             <CardHeader>
               <CardTitle>Traffic Activity</CardTitle>
               <CardDescription>Live flow of normal vs suspicious traffic</CardDescription>
@@ -168,7 +168,7 @@ function DashboardContent() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Brain className="h-4 w-4 text-secondary" />
@@ -193,7 +193,7 @@ function DashboardContent() {
           </Card>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2 lg:gap-5">
           <Card>
             <CardHeader>
               <CardTitle>Live Network Graph</CardTitle>
@@ -201,7 +201,7 @@ function DashboardContent() {
                 {liveGraph?.victim_ip ? `Target: ${liveGraph.victim_ip}` : "Waiting for graph updates"}
               </CardDescription>
             </CardHeader>
-            <CardContent className="h-[360px]">
+            <CardContent className="h-[240px] sm:h-[300px] lg:h-[360px]">
               <CytoscapeGraph graph={liveGraph} />
             </CardContent>
           </Card>
@@ -211,7 +211,7 @@ function DashboardContent() {
               <CardTitle>Recent Alerts</CardTitle>
               <CardDescription>Latest security notifications</CardDescription>
             </CardHeader>
-            <CardContent className="max-h-[360px] space-y-2 overflow-y-auto">
+            <CardContent className="max-h-[240px] space-y-2 overflow-y-auto sm:max-h-[300px] lg:max-h-[360px]">
               {alerts.slice(0, 8).map((a) => (
                 <div
                   key={a.id}

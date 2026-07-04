@@ -11,12 +11,13 @@ import {
   Network,
   Settings,
   ShieldBan,
+  X,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
 import { useRealtimeStore } from "@/store/realtime-store";
 
-const nav = [
+export const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/traffic", label: "Live Traffic", icon: Activity },
   { href: "/alerts", label: "Alerts", icon: AlertTriangle },
@@ -27,29 +28,51 @@ const nav = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar() {
+type SidebarProps = {
+  className?: string;
+  mobile?: boolean;
+  onNavigate?: () => void;
+};
+
+export function Sidebar({ className, mobile = false, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const connected = useRealtimeStore((s) => s.connected);
   const liveCount = Object.values(connected).filter(Boolean).length;
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-border bg-surface/90 backdrop-blur-xl">
-      <div className="border-b border-border px-4 py-4">
+    <aside
+      className={cn(
+        "flex h-full w-64 shrink-0 flex-col border-r border-border bg-surface/95 backdrop-blur-xl",
+        className,
+      )}
+    >
+      <div className="flex items-center justify-between border-b border-border px-4 py-4">
         <Logo />
+        {mobile && onNavigate && (
+          <button
+            type="button"
+            aria-label="Close menu"
+            className="rounded-lg p-2 text-muted hover:bg-panel hover:text-white lg:hidden"
+            onClick={onNavigate}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
-      <nav className="flex-1 space-y-1 p-3">
-        {nav.map(({ href, label, icon: Icon }) => {
+      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+        {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link
               key={href}
               href={href}
+              onClick={onNavigate}
               className={cn(
                 "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                 active
-                  ? "bg-primary/10 text-primary border border-primary/20 shadow-glow"
-                  : "text-muted hover:bg-panel hover:text-white border border-transparent",
+                  ? "border border-primary/20 bg-primary/10 text-primary shadow-glow"
+                  : "border border-transparent text-muted hover:bg-panel hover:text-white",
               )}
             >
               <Icon
@@ -60,7 +83,7 @@ export function Sidebar() {
               />
               {label}
               {href === "/alerts" && liveCount > 0 && (
-                <span className="ml-auto h-2 w-2 rounded-full bg-secondary animate-pulse-soft" />
+                <span className="ml-auto h-2 w-2 animate-pulse-soft rounded-full bg-secondary" />
               )}
             </Link>
           );
