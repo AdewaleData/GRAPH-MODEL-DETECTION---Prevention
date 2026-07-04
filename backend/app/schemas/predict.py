@@ -16,7 +16,8 @@ class FlowRecord(BaseModel):
     flow_packets_s: float = 1.0
     syn_flag_count: float = 0
     ack_flag_count: float = 1
-    # Additional features filled with 0 if missing during encoding
+    # Full CICDDoS feature columns from CSV rows (simulator / batch ingest)
+    extras: dict[str, float] = Field(default_factory=dict)
 
 
 class PredictRequest(BaseModel):

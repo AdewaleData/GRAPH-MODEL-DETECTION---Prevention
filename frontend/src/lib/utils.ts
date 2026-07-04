@@ -8,7 +8,9 @@ export function cn(...inputs: ClassValue[]) {
 export function formatPercent(value: number | null | undefined) {
   const n = Number(value);
   if (!Number.isFinite(n)) return "0.0%";
-  return `${(n * 100).toFixed(1)}%`;
+  // Accept either fraction (0.72) or percent (72)
+  const frac = n > 1 ? n / 100 : n;
+  return `${Math.max(0, frac * 100).toFixed(1)}%`;
 }
 
 export function formatMs(value: number | null | undefined) {

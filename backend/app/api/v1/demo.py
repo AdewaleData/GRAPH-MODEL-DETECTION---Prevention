@@ -2,7 +2,15 @@
 
 from fastapi import APIRouter, Depends
 
-from ...core.config import LIVE_SIMULATOR_ENABLED, LIVE_SIMULATOR_INTERVAL_SECONDS, LOAD_GCN, LOAD_GAT, LOAD_RF
+from ...core.config import (
+    LIVE_SIMULATOR_ATTACKS_PER_10,
+    LIVE_SIMULATOR_ENABLED,
+    LIVE_SIMULATOR_INTERVAL_SECONDS,
+    LIVE_SIMULATOR_TICKS_PER_INTERVAL,
+    LOAD_GCN,
+    LOAD_GAT,
+    LOAD_RF,
+)
 from ...core.dependencies import require_roles
 from ...db.models import UserRole
 from ...services.inference_engine import inference_engine
@@ -21,6 +29,9 @@ async def demo_status(_user=Depends(require_roles(UserRole.admin, UserRole.analy
         "attack_windows": len(live_simulator._attack_windows),
         "benign_windows": len(live_simulator._benign_windows),
         "simulator_interval_seconds": LIVE_SIMULATOR_INTERVAL_SECONDS,
+        "tick_counter": live_simulator._tick_counter,
+        "attacks_per_10": LIVE_SIMULATOR_ATTACKS_PER_10,
+        "ticks_per_interval": LIVE_SIMULATOR_TICKS_PER_INTERVAL,
         "models_loaded": inference_engine._loaded,
         "models": {
             "gcn": inference_engine.gcn is not None,

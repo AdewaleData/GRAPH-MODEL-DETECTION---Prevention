@@ -11,8 +11,10 @@ import pandas as pd
 
 from ..core.config import (
     GRAPH_MIN_FLOWS,
+    LIVE_SIMULATOR_ATTACKS_PER_10,
     LIVE_SIMULATOR_INTERVAL_SECONDS,
     LIVE_SIMULATOR_SAMPLE_ROWS,
+    LIVE_SIMULATOR_TICKS_PER_INTERVAL,
     LOAD_GAT,
     resolve_simulator_csv_path,
 )
@@ -24,24 +26,37 @@ from .metrics_service import MetricsService
 
 logger = logging.getLogger(__name__)
 
-# Prefer attack-labeled windows so the demo surfaces threats, alerts, and prevention.
-ATTACK_WINDOW_RATIO = 0.72
+_SKIP_COLS = {"Source IP", "Destination IP", "Flow ID", "Timestamp", "Label"}
 
 
 def _row_to_flow(row: pd.Series) -> FlowRecord:
+    extras: dict[str, float] = {}
+    for col in row.index:
+        key = str(col).strip()
+        if key in _SKIP_COLS:
+            continue
+        try:
+            val = row[col]
+            if pd.isna(val):
+                continue
+            extras[key] = float(val)
+        except (TypeError, ValueError):
+            continue
+
     return FlowRecord(
         source_ip=str(row["Source IP"]).strip(),
         destination_ip=str(row["Destination IP"]).strip(),
-        source_port=float(row.get("Source Port", 0) or 0),
-        destination_port=float(row.get("Destination Port", 0) or 0),
-        protocol=float(row.get("Protocol", 6) or 6),
-        flow_duration=float(row.get("Flow Duration", 0) or 0),
-        total_fwd_packets=float(row.get("Total Fwd Packets", 0) or 0),
-        total_backward_packets=float(row.get("Total Backward Packets", 0) or 0),
-        flow_bytes_s=float(row.get("Flow Bytes/s", 0) or 0),
-        flow_packets_s=float(row.get("Flow Packets/s", 1) or 1),
-        syn_flag_count=float(row.get("SYN Flag Count", 0) or 0),
-        ack_flag_count=float(row.get("ACK Flag Count", 1) or 1),
+        source_port=float(extras.get("Source Port", row.get("Source Port", 0)) or 0),
+        destination_port=float(extras.get("Destination Port", row.get("Destination Port", 0)) or 0),
+        protocol=float(extras.get("Protocol", row.get("Protocol", 6)) or 6),
+        flow_duration=float(extras.get("Flow Duration", 0) or 0),
+        total_fwd_packets=float(extras.get("Total Fwd Packets", 0) or 0),
+        total_backward_packets=float(extras.get("Total Backward Packets", 0) or 0),
+        flow_bytes_s=float(extras.get("Flow Bytes/s", 0) or 0),
+        flow_packets_s=float(extras.get("Flow Packets/s", 1) or 1),
+        syn_flag_count=float(extras.get("SYN Flag Count", 0) or 0),
+        ack_flag_count=float(extras.get("ACK Flag Count", 1) or 1),
+        extras=extras,
     )
 
 
@@ -51,6 +66,7 @@ class LiveSimulator:
         self._running = False
         self._attack_windows: list[tuple[str, list[FlowRecord]]] = []
         self._benign_windows: list[tuple[str, list[FlowRecord]]] = []
+        self._tick_counter = 0
 
     @property
     def is_running(self) -> bool:
@@ -95,8 +111,12 @@ class LiveSimulator:
         )
 
     def _pick_window(self) -> tuple[str, list[FlowRecord]] | None:
-        use_attack = random.random() < ATTACK_WINDOW_RATIO and self._attack_windows
-        if use_attack:
+        """Exactly 4 of every 10 ticks use attack-labeled traffic."""
+        self._tick_counter += 1
+        slot = (self._tick_counter - 1) % 10
+        use_attack = slot < LIVE_SIMULATOR_ATTACKS_PER_10
+
+        if use_attack and self._attack_windows:
             return random.choice(self._attack_windows)
         if self._benign_windows:
             return random.choice(self._benign_windows)
@@ -122,12 +142,12 @@ class LiveSimulator:
                 result = await detection_service.predict(session, request)
                 await session.commit()
                 logger.info(
-                    "Live scan victim=%s attack=%s prob=%.2f flows=%d latency=%.1fms",
+                    "Live scan #%d victim=%s attack=%s prob=%.3f flows=%d",
+                    self._tick_counter,
                     result.victim_ip,
                     result.is_attack,
                     result.probability,
                     result.num_flows,
-                    result.latency_ms,
                 )
                 summary = await metrics_svc.summary(session)
                 await ws_manager.broadcast(
@@ -143,7 +163,10 @@ class LiveSimulator:
     async def _run_loop(self) -> None:
         await asyncio.to_thread(self._load_samples)
         while self._running:
-            await self._tick()
+            for _ in range(LIVE_SIMULATOR_TICKS_PER_INTERVAL):
+                if not self._running:
+                    break
+                await self._tick()
             await asyncio.sleep(LIVE_SIMULATOR_INTERVAL_SECONDS)
 
     def start(self) -> None:
@@ -151,7 +174,12 @@ class LiveSimulator:
             return
         self._running = True
         self._task = asyncio.create_task(self._run_loop())
-        logger.info("Live simulator started (interval=%ss)", LIVE_SIMULATOR_INTERVAL_SECONDS)
+        logger.info(
+            "Live simulator started interval=%ss ticks=%s attacks_per_10=%s",
+            LIVE_SIMULATOR_INTERVAL_SECONDS,
+            LIVE_SIMULATOR_TICKS_PER_INTERVAL,
+            LIVE_SIMULATOR_ATTACKS_PER_10,
+        )
 
     async def stop(self) -> None:
         self._running = False

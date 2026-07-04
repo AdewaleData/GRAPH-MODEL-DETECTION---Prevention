@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 import joblib
 import numpy as np
@@ -24,16 +23,18 @@ class FeatureEncoder:
         if FEATURE_COLS_PATH.exists():
             self.feature_cols = joblib.load(FEATURE_COLS_PATH)
             logger.info("Loaded %d feature columns", len(self.feature_cols))
-        elif RF_BUNDLE_PATH.exists():
+
+        if RF_BUNDLE_PATH.exists():
             bundle = joblib.load(RF_BUNDLE_PATH)
-            self.feature_cols = bundle["feature_cols"]
-            self.scaler = bundle["scaler"]
-            logger.info("Loaded feature cols from RF bundle")
-        else:
+            if not self.feature_cols:
+                self.feature_cols = bundle["feature_cols"]
+            self.scaler = bundle.get("scaler")
+            logger.info("Loaded RF scaler for GNN/tabular encoding")
+        elif not self.feature_cols:
             logger.warning("No feature columns file — using minimal feature set")
 
     def _flow_to_dict(self, flow: FlowRecord) -> dict[str, float]:
-        return {
+        raw = {
             "Source Port": flow.source_port,
             "Destination Port": flow.destination_port,
             "Protocol": flow.protocol,
@@ -48,6 +49,9 @@ class FeatureEncoder:
             "duration_packet_rate": flow.flow_duration * flow.flow_packets_s,
             "syn_ack_ratio": flow.syn_flag_count / (flow.ack_flag_count + 1),
         }
+        if flow.extras:
+            raw.update(flow.extras)
+        return raw
 
     def encode(self, flow: FlowRecord) -> np.ndarray:
         raw = self._flow_to_dict(flow)
