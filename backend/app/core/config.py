@@ -64,6 +64,15 @@ GNN_BATCH_SIZE = 64
 GRAPH_MIN_FLOWS = 12
 FLOW_BUFFER_MAX_PER_VICTIM = 48
 
+PRODUCTION = os.getenv("PRODUCTION", "false").lower() == "true"
+
+# Model loading (disable GAT/RF on low-RAM cloud — GCN is the primary detector)
+_default_gat = "false" if os.getenv("PRODUCTION", "false").lower() == "true" else "true"
+_default_rf = "false" if os.getenv("PRODUCTION", "false").lower() == "true" else "true"
+LOAD_GCN = os.getenv("LOAD_GCN", "true").lower() == "true"
+LOAD_GAT = os.getenv("LOAD_GAT", _default_gat).lower() == "true"
+LOAD_RF = os.getenv("LOAD_RF", _default_rf).lower() == "true"
+
 # Alerts
 ALERT_PROB_THRESHOLD = 0.62  # matches tuned GCN threshold from training
 SEVERITY_HIGH = 0.85
@@ -74,8 +83,8 @@ TLS_ENABLED = False
 
 # Live demo stream (real CICDDoS samples through GNN pipeline)
 LIVE_SIMULATOR_ENABLED = os.getenv("LIVE_SIMULATOR_ENABLED", "true").lower() == "true"
-LIVE_SIMULATOR_INTERVAL_SECONDS = 4
-LIVE_SIMULATOR_SAMPLE_ROWS = 4000
+LIVE_SIMULATOR_INTERVAL_SECONDS = int(os.getenv("LIVE_SIMULATOR_INTERVAL_SECONDS", "4"))
+LIVE_SIMULATOR_SAMPLE_ROWS = int(os.getenv("LIVE_SIMULATOR_SAMPLE_ROWS", "800" if PRODUCTION else "4000"))
 
 # Prevention / mitigation
 MITIGATION_AUTO_ENABLED = os.getenv("MITIGATION_AUTO_ENABLED", "true").lower() == "true"
@@ -88,7 +97,6 @@ MITIGATION_QUARANTINE_TOP_K = int(os.getenv("MITIGATION_QUARANTINE_TOP_K", "2"))
 MITIGATION_TTL_HOURS = int(os.getenv("MITIGATION_TTL_HOURS", "24"))
 MITIGATION_FILTER_BLOCKED_FLOWS = os.getenv("MITIGATION_FILTER_BLOCKED_FLOWS", "true").lower() == "true"
 
-PRODUCTION = os.getenv("PRODUCTION", "false").lower() == "true"
 UVICORN_WORKERS = int(os.getenv("UVICORN_WORKERS", "1"))
 
 _extra_origins = os.getenv("CORS_ORIGINS", "")

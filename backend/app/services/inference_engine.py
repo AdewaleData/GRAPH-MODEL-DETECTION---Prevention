@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 import json
 import logging
 import sys
@@ -19,7 +20,15 @@ if str(_PROJECT_ROOT / "src") not in sys.path:
 
 from ddos_gnn.models import GATGraphClassifier, GCNGraphClassifier  # noqa: E402
 
-from ..core.config import GAT_MODEL_PATH, GCN_MODEL_PATH, INFERENCE_DEVICE, RF_BUNDLE_PATH
+from ..core.config import (
+    GAT_MODEL_PATH,
+    GCN_MODEL_PATH,
+    INFERENCE_DEVICE,
+    LOAD_GAT,
+    LOAD_GCN,
+    LOAD_RF,
+    RF_BUNDLE_PATH,
+)
 from ..schemas.predict import FlowRecord
 from .feature_encoder import FeatureEncoder
 
@@ -65,41 +74,55 @@ class InferenceEngine:
         self.gcn_threshold = 0.5
         self.gat_threshold = 0.5
         self._loaded = False
+        self._loading = False
 
     def load_models(self) -> None:
-        if self._loaded:
+        if self._loaded or self._loading:
             return
-        logger.info("Loading models on device=%s", self.device)
+        self._loading = True
+        try:
+            torch.set_num_threads(1)
+            logger.info(
+                "Loading models device=%s gcn=%s gat=%s rf=%s",
+                self.device,
+                LOAD_GCN,
+                LOAD_GAT,
+                LOAD_RF,
+            )
 
-        if GCN_MODEL_PATH.exists():
-            meta_path = GCN_MODEL_PATH.with_suffix(".json")
-            self.gcn_meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
-            state = _load_state_dict(GCN_MODEL_PATH)
-            self.gcn = _build_gcn_from_state(state)
-            self.gcn.to(self.device).eval()
-            self.gcn_threshold = float(self.gcn_meta.get("threshold", 0.5))
-            logger.info("GCN loaded hidden=%d layers=%d threshold=%.3f",
-                        int(state["convs.0.bias"].shape[0]),
-                        len({k.split('.')[1] for k in state if k.startswith('convs.')}),
-                        self.gcn_threshold)
+            if LOAD_GCN and GCN_MODEL_PATH.exists():
+                meta_path = GCN_MODEL_PATH.with_suffix(".json")
+                self.gcn_meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+                state = _load_state_dict(GCN_MODEL_PATH)
+                self.gcn = _build_gcn_from_state(state)
+                self.gcn.to(self.device).eval()
+                self.gcn_threshold = float(self.gcn_meta.get("threshold", 0.5))
+                del state
+                gc.collect()
+                logger.info("GCN loaded threshold=%.3f", self.gcn_threshold)
 
-        if GAT_MODEL_PATH.exists():
-            meta_path = GAT_MODEL_PATH.with_suffix(".json")
-            self.gat_meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
-            try:
-                state = _load_state_dict(GAT_MODEL_PATH)
-                self.gat = _build_gat_from_state(state)
-                self.gat.to(self.device).eval()
-                self.gat_threshold = float(self.gat_meta.get("threshold", 0.5))
-                logger.info("GAT loaded threshold=%.3f", self.gat_threshold)
-            except Exception as exc:
-                logger.warning("GAT load skipped: %s", exc)
+            if LOAD_GAT and GAT_MODEL_PATH.exists():
+                meta_path = GAT_MODEL_PATH.with_suffix(".json")
+                self.gat_meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+                try:
+                    state = _load_state_dict(GAT_MODEL_PATH)
+                    self.gat = _build_gat_from_state(state)
+                    self.gat.to(self.device).eval()
+                    self.gat_threshold = float(self.gat_meta.get("threshold", 0.5))
+                    del state
+                    gc.collect()
+                    logger.info("GAT loaded threshold=%.3f", self.gat_threshold)
+                except Exception as exc:
+                    logger.warning("GAT load skipped: %s", exc)
 
-        if RF_BUNDLE_PATH.exists():
-            self.rf_bundle = joblib.load(RF_BUNDLE_PATH)
-            logger.info("RF bundle loaded")
+            if LOAD_RF and RF_BUNDLE_PATH.exists():
+                self.rf_bundle = joblib.load(RF_BUNDLE_PATH)
+                gc.collect()
+                logger.info("RF bundle loaded")
 
-        self._loaded = True
+            self._loaded = True
+        finally:
+            self._loading = False
 
     @torch.no_grad()
     def predict_graph(self, data: Data, model_name: str = "gcn") -> tuple[bool, float, float]:

@@ -10,6 +10,15 @@ router = APIRouter(tags=["Health"])
 
 @router.get("/health")
 async def health(response: Response):
+    if inference_engine._loading:
+        return {
+            "status": "starting",
+            "service": APP_NAME,
+            "version": APP_VERSION,
+            "production": PRODUCTION,
+            "models": {"gcn": False, "gat": False, "rf": False},
+        }
+
     inference_engine.load_models()
     models = {
         "gcn": inference_engine.gcn is not None,
@@ -18,7 +27,7 @@ async def health(response: Response):
     }
     any_model = any(models.values())
     status = "healthy" if any_model else "degraded"
-    if PRODUCTION and not any_model:
+    if PRODUCTION and not any_model and inference_engine._loaded:
         response.status_code = 503
         status = "unhealthy"
     return {

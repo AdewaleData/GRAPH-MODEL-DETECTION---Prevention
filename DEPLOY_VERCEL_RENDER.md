@@ -70,7 +70,7 @@ Replace `YOUR_USERNAME` with your GitHub username.
 | **Root Directory** | *(leave empty — repo root)* |
 | **Dockerfile Path** | `Dockerfile` |
 | **Docker Context** | `.` |
-| **Instance Type** | **Starter** ($7/mo) — recommended; free tier often fails with PyTorch |
+| **Instance Type** | **Standard (2 GB RAM)** recommended for PyTorch. Free/Starter (512 MB) often OOM. |
 
 ### Step 4: Render environment variables
 
@@ -81,6 +81,11 @@ Scroll to **Environment Variables** and add:
 | `JWT_SECRET` | Generate: run `openssl rand -hex 32` locally, or use Render’s random generator |
 | `PRODUCTION` | `true` |
 | `LIVE_SIMULATOR_ENABLED` | `true` |
+| `LIVE_SIMULATOR_SAMPLE_ROWS` | `800` |
+| `LOAD_GCN` | `true` |
+| `LOAD_GAT` | `false` |
+| `LOAD_RF` | `false` |
+| `OMP_NUM_THREADS` | `1` |
 | `MITIGATION_AUTO_ENABLED` | `true` |
 | `MITIGATION_MODE` | `simulated` |
 | `CORS_ORIGINS` | `https://placeholder.vercel.app` *(update after Vercel deploy)* |
@@ -218,7 +223,7 @@ GitHub repo
 
 | Problem | Fix |
 |---------|-----|
-| Render build fails / out of memory | Use **Starter** plan, not Free |
+| Render build fails / out of memory | Upgrade to **Standard (2 GB)** plan, or set `LIVE_SIMULATOR_ENABLED=false` and `LOAD_GAT=false` |
 | Vercel shows login but API errors | Check `NEXT_PUBLIC_API_URL` matches Render URL |
 | CORS error in browser | Update `CORS_ORIGINS` on Render to exact Vercel URL |
 | `/health` shows models false | Ensure `artifacts/models/*.pt` were pushed to GitHub |

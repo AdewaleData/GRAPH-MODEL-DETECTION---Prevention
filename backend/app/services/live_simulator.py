@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import gc
 import logging
 import random
 
@@ -94,6 +95,8 @@ class LiveSimulator:
             except Exception:
                 await session.rollback()
                 logger.exception("Live simulator tick failed")
+            finally:
+                gc.collect()
 
     async def _run_loop(self) -> None:
         await asyncio.to_thread(self._load_samples)
