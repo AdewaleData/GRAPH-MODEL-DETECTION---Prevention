@@ -130,19 +130,22 @@ class DetectionService:
 
         alert_result = await self.alert_service.maybe_create_alert(session, victim_ip, prob, is_attack, row.id)
         if alert_result and is_attack:
-            severity = alert_result["severity"]
-            await mitigation_service.maybe_auto_mitigate(
-                session,
-                victim_ip=victim_ip,
-                probability=prob,
-                severity=severity,
-                flows=window_flows,
-                graph_data=graph_data,
-                node_ips=node_ips,
-                alert_id=alert_result["alert"].id,
-                prediction_id=row.id,
-                detection_started_at=detection_started,
-            )
+            try:
+                severity = alert_result["severity"]
+                await mitigation_service.maybe_auto_mitigate(
+                    session,
+                    victim_ip=victim_ip,
+                    probability=prob,
+                    severity=severity,
+                    flows=window_flows,
+                    graph_data=graph_data,
+                    node_ips=node_ips,
+                    alert_id=alert_result["alert"].id,
+                    prediction_id=row.id,
+                    detection_started_at=detection_started,
+                )
+            except Exception:
+                logger.exception("Auto-mitigation failed victim=%s", victim_ip)
 
         await ws_manager.broadcast(
             "traffic",

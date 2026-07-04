@@ -54,6 +54,7 @@ class MitigationService:
         prediction_id: int | None,
         detection_started_at: float,
     ) -> list[dict]:
+        global _flows_blocked_count, _flows_allowed_count
         if not MITIGATION_AUTO_ENABLED:
             return []
 
