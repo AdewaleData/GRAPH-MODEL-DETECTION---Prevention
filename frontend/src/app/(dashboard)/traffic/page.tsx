@@ -9,7 +9,7 @@ import { useRealtimeStore } from "@/store/realtime-store";
 import { useAuthStore } from "@/store/auth-store";
 import { api } from "@/lib/api";
 import type { PredictionHistory } from "@/types/api";
-import { formatPercent } from "@/lib/utils";
+import { formatDetectionConfidence, formatPercent } from "@/lib/utils";
 
 export default function TrafficPage() {
   const token = useAuthStore((s) => s.token)!;
@@ -82,7 +82,9 @@ export default function TrafficPage() {
                         {r.is_attack ? "Suspicious" : "Normal"}
                       </Badge>
                     </td>
-                    <td className="py-3 pr-4 tabular-nums">{formatPercent(r.probability)}</td>
+                    <td className="py-3 pr-4 tabular-nums">
+                      {formatDetectionConfidence(r.is_attack, r.probability)}
+                    </td>
                     <td className="py-3 uppercase text-xs text-secondary">
                       {"model" in r ? r.model : r.model_name}
                     </td>

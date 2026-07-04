@@ -67,6 +67,8 @@ class LiveSimulator:
         self._attack_windows: list[tuple[str, list[FlowRecord]]] = []
         self._benign_windows: list[tuple[str, list[FlowRecord]]] = []
         self._tick_counter = 0
+        self._schedule_block = -1
+        self._attack_slots: list[bool] = []
 
     @property
     def is_running(self) -> bool:
@@ -110,22 +112,34 @@ class LiveSimulator:
             len(self._benign_windows),
         )
 
-    def _pick_window(self) -> tuple[str, list[FlowRecord]] | None:
-        """Exactly 4 of every 10 ticks use attack-labeled traffic."""
+    def _refresh_attack_schedule(self, block: int) -> None:
+        """4 attack + 6 benign slots per block of 10, shuffled each block."""
+        if block == self._schedule_block:
+            return
+        self._schedule_block = block
+        pattern = [True] * LIVE_SIMULATOR_ATTACKS_PER_10 + [False] * (10 - LIVE_SIMULATOR_ATTACKS_PER_10)
+        rng = random.Random(block)
+        rng.shuffle(pattern)
+        self._attack_slots = pattern
+
+    def _pick_window(self) -> tuple[tuple[str, list[FlowRecord]] | None, bool]:
+        """Exactly 4 of every 10 ticks use attack-labeled traffic (mixed order)."""
         self._tick_counter += 1
         slot = (self._tick_counter - 1) % 10
-        use_attack = slot < LIVE_SIMULATOR_ATTACKS_PER_10
+        block = (self._tick_counter - 1) // 10
+        self._refresh_attack_schedule(block)
+        use_attack = self._attack_slots[slot] if self._attack_slots else slot < LIVE_SIMULATOR_ATTACKS_PER_10
 
         if use_attack and self._attack_windows:
-            return random.choice(self._attack_windows)
+            return random.choice(self._attack_windows), True
         if self._benign_windows:
-            return random.choice(self._benign_windows)
+            return random.choice(self._benign_windows), False
         if self._attack_windows:
-            return random.choice(self._attack_windows)
-        return None
+            return random.choice(self._attack_windows), True
+        return None, use_attack
 
     async def _tick(self) -> None:
-        picked = self._pick_window()
+        picked, demo_attack_traffic = self._pick_window()
         if not picked:
             return
 
@@ -142,12 +156,22 @@ class LiveSimulator:
                 result = await detection_service.predict(session, request)
                 await session.commit()
                 logger.info(
-                    "Live scan #%d victim=%s attack=%s prob=%.3f flows=%d",
+                    "Live scan #%d victim=%s demo_attack=%s detected=%s prob=%.3f flows=%d",
                     self._tick_counter,
                     result.victim_ip,
+                    demo_attack_traffic,
                     result.is_attack,
                     result.probability,
                     result.num_flows,
+                )
+                await ws_manager.broadcast(
+                    "traffic",
+                    {
+                        "type": "simulator_tick",
+                        "tick": self._tick_counter,
+                        "demo_attack_traffic": demo_attack_traffic,
+                        "attack_slot": (self._tick_counter - 1) % 10,
+                    },
                 )
                 summary = await metrics_svc.summary(session)
                 await ws_manager.broadcast(

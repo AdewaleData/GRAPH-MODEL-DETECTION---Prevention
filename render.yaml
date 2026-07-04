@@ -24,9 +24,9 @@ services:
       - key: LIVE_SIMULATOR_SAMPLE_ROWS
         value: "5000"
       - key: LIVE_SIMULATOR_INTERVAL_SECONDS
-        value: "3"
-      - key: LIVE_SIMULATOR_TICKS_PER_INTERVAL
         value: "2"
+      - key: LIVE_SIMULATOR_TICKS_PER_INTERVAL
+        value: "5"
       - key: LIVE_SIMULATOR_ATTACKS_PER_10
         value: "4"
       - key: LOAD_GCN

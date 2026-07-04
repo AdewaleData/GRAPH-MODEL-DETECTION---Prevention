@@ -10,7 +10,7 @@ import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
 import { useRealtimeStore } from "@/store/realtime-store";
 import type { Alert } from "@/types/api";
-import { formatPercent } from "@/lib/utils";
+import { formatDetectionConfidence } from "@/lib/utils";
 
 export default function AlertsPage() {
   const token = useAuthStore((s) => s.token)!;
@@ -56,7 +56,8 @@ export default function AlertsPage() {
                   <p className="text-sm text-muted">{a.message}</p>
                   <p className="text-xs font-mono text-primary">{a.victim_ip}</p>
                   <p className="text-xs text-muted">
-                    {new Date(a.created_at).toLocaleString()} · Confidence {formatPercent(a.probability)}
+                    {new Date(a.created_at).toLocaleString()} · Confidence{" "}
+                    {formatDetectionConfidence(true, a.probability)}
                   </p>
                 </div>
                 {!a.acknowledged && (

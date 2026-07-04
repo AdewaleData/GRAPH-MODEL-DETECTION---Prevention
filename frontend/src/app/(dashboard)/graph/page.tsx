@@ -12,7 +12,7 @@ import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
 import { useRealtimeStore } from "@/store/realtime-store";
 import type { LiveGraph } from "@/types/api";
-import { formatPercent } from "@/lib/utils";
+import { formatDetectionConfidence, formatPercent } from "@/lib/utils";
 
 export default function GraphPage() {
   const token = useAuthStore((s) => s.token)!;
@@ -74,7 +74,8 @@ export default function GraphPage() {
             <Badge variant="muted">{display.edges.length} links</Badge>
             {display.probability != null && (
               <Badge variant={display.is_attack ? "danger" : "success"}>
-                {display.is_attack ? "Suspicious" : "Normal"} · {formatPercent(display.probability)}
+                {display.is_attack ? "Suspicious" : "Normal"} ·{" "}
+                {formatDetectionConfidence(display.is_attack, display.probability)}
               </Badge>
             )}
           </div>
