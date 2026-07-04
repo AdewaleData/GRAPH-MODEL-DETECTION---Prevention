@@ -17,6 +17,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     LIVE_SIMULATOR_INTERVAL_SECONDS=6
 
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
+    && pip install --no-cache-dir "numpy>=1.26.4,<2.0.0" \
     && pip install --no-cache-dir "torch==2.1.2+cpu" --index-url https://download.pytorch.org/whl/cpu \
     && pip install --no-cache-dir \
         pyg-lib torch-scatter torch-sparse torch-cluster torch-spline-conv \

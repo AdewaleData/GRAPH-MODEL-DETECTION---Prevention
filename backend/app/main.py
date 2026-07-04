@@ -26,6 +26,19 @@ from .websockets.routes import router as ws_router
 logger = logging.getLogger(__name__)
 
 
+def _verify_numpy_torch() -> None:
+    """PyTorch 2.1 requires NumPy 1.x; NumPy 2 breaks torch.from_numpy."""
+    import numpy as np
+    import torch
+
+    try:
+        torch.from_numpy(np.zeros(1, dtype=np.float32))
+    except RuntimeError as exc:
+        raise RuntimeError(
+            "NumPy/PyTorch incompatible (need numpy>=1.26,<2). Rebuild the Docker image."
+        ) from exc
+
+
 async def _seed_admin() -> None:
     async with SessionLocal() as session:
         repo = UserRepository(session)
@@ -56,6 +69,7 @@ async def lifespan(app: FastAPI):
         await mitigation_service.load_blocklist(session)
         await session.commit()
     inference_engine.load_models()
+    _verify_numpy_torch()
     logger.info("Models loaded — API ready")
     if LIVE_SIMULATOR_ENABLED:
         live_simulator.start()
