@@ -47,7 +47,7 @@ export function useMetrics(token: string) {
 export function displayMetric(
   value: number | string | null | undefined,
   loaded: boolean,
-  fallback = 0,
+  fallback: string | number = 0,
 ): string | number {
   if (!loaded) return "...";
   if (value === null || value === undefined) return fallback;
