@@ -17,7 +17,7 @@ services:
       - key: PRODUCTION
         value: "true"
       - key: LIVE_SIMULATOR_ENABLED
-        value: "false"
+        value: "true"
       - key: MITIGATION_AUTO_ENABLED
         value: "true"
       - key: MITIGATION_MODE

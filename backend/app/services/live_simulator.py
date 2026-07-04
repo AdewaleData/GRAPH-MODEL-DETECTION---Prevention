@@ -8,7 +8,7 @@ import random
 
 import pandas as pd
 
-from ..core.config import CIC_DDOS_CSV_PATH, GRAPH_MIN_FLOWS, LIVE_SIMULATOR_INTERVAL_SECONDS, LIVE_SIMULATOR_SAMPLE_ROWS
+from ..core.config import GRAPH_MIN_FLOWS, LIVE_SIMULATOR_INTERVAL_SECONDS, LIVE_SIMULATOR_SAMPLE_ROWS, resolve_simulator_csv_path
 from ..db.database import SessionLocal
 from ..schemas.predict import FlowRecord, PredictRequest
 from ..websockets.manager import ws_manager
@@ -42,7 +42,7 @@ class LiveSimulator:
         self._windows: list[tuple[str, list[FlowRecord]]] = []
 
     def _load_samples(self) -> None:
-        path = CIC_DDOS_CSV_PATH
+        path = resolve_simulator_csv_path()
         if not path.exists():
             logger.warning("Live simulator: dataset not found at %s", path)
             return

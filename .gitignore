@@ -2,6 +2,8 @@
 artifacts/*
 !artifacts/models/
 !artifacts/models/**
+!artifacts/data/
+!artifacts/data/cicddos_sample.csv
 artifacts/backend/
 
 # Dataset (too large for GitHub — not needed for Render deploy)

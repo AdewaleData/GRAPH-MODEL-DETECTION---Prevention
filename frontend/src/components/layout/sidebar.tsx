@@ -11,8 +11,8 @@ import {
   Network,
   Settings,
   ShieldBan,
-  Shield,
 } from "lucide-react";
+import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
 import { useRealtimeStore } from "@/store/realtime-store";
 
@@ -34,14 +34,8 @@ export function Sidebar() {
 
   return (
     <aside className="flex h-full w-64 flex-col border-r border-border bg-surface/90 backdrop-blur-xl">
-      <div className="flex items-center gap-3 border-b border-border px-5 py-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
-          <Shield className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-white leading-tight">Halal Graph</p>
-          <p className="text-[10px] uppercase tracking-widest text-secondary">DDoS Shield</p>
-        </div>
+      <div className="border-b border-border px-4 py-4">
+        <Logo />
       </div>
 
       <nav className="flex-1 space-y-1 p-3">

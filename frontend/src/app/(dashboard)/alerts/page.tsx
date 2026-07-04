@@ -68,7 +68,7 @@ export default function AlertsPage() {
               </div>
             ))}
             {!merged.length && (
-              <p className="py-16 text-center text-muted">No alerts — your network looks healthy.</p>
+              <p className="py-16 text-center text-muted">No alerts. Your network looks healthy.</p>
             )}
           </CardContent>
         </Card>

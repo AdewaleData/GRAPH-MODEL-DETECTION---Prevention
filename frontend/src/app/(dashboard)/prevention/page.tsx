@@ -74,27 +74,27 @@ export default function PreventionPage() {
     <>
       <Header
         title="Attack Prevention"
-        subtitle="Automated mitigation triggered by GNN detection — block, rate-limit, or quarantine attacker sources"
+        subtitle="Automated mitigation from GNN detection: block, rate-limit, or quarantine attacker sources"
       />
       <main className="flex-1 overflow-y-auto p-6 space-y-6">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             title="Active Rules"
-            value={summary?.total_active ?? "—"}
+            value={summary?.total_active ?? 0}
             subtitle={`${summary?.active_blocks ?? 0} blocks · ${summary?.active_rate_limits ?? 0} rate limits`}
             icon={ShieldBan}
             accent="danger"
           />
           <MetricCard
             title="Flows Blocked"
-            value={stats?.flows_blocked ?? "—"}
+            value={stats?.flows_blocked ?? 0}
             subtitle="Dropped at ingest by blocklist"
             icon={Ban}
             accent="secondary"
           />
           <MetricCard
             title="Time to Mitigate"
-            value={summary ? `${summary.avg_time_to_mitigate_ms.toFixed(1)}ms` : "—"}
+            value={summary ? `${summary.avg_time_to_mitigate_ms.toFixed(1)}ms` : "0ms"}
             subtitle="Detection → prevention action"
             icon={Zap}
             accent="success"
@@ -112,7 +112,7 @@ export default function PreventionPage() {
           <CardHeader>
             <CardTitle>Active Prevention Rules</CardTitle>
             <CardDescription>
-              Auto-applied when GNN detects attack patterns — critical → block, high → rate limit, medium → quarantine
+              Auto-applied on attack patterns: critical blocks, high rate-limits, medium quarantine
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -145,7 +145,7 @@ export default function PreventionPage() {
               </div>
             ))}
             {!activeMerged.length && (
-              <p className="py-12 text-center text-muted">No active prevention rules — network is clear.</p>
+              <p className="py-12 text-center text-muted">No active prevention rules. Network is clear.</p>
             )}
           </CardContent>
         </Card>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Shield } from "lucide-react";
+import { LogoMark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,8 +45,8 @@ export default function LoginPage() {
       </div>
       <Card className="relative w-full max-w-md border-border/80">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl border border-primary/30 bg-primary/10">
-            <Shield className="h-7 w-7 text-primary" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/10 to-secondary/5 shadow-glow">
+            <LogoMark className="h-11 w-11" />
           </div>
           <CardTitle className="text-xl">Welcome back</CardTitle>
           <CardDescription>Sign in to your DDoS protection dashboard</CardDescription>

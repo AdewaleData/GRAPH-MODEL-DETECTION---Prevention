@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r /app/backend/requirements.txt -r /app/requirem
 
 COPY src /app/src
 COPY artifacts/models /app/artifacts/models
+COPY artifacts/data /app/artifacts/data
 COPY backend /app/backend
 
 ENV PYTHONPATH=/app/src:/app/backend

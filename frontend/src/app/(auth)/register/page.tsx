@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Shield } from "lucide-react";
+import { LogoMark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,8 +41,8 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-canvas p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl border border-secondary/30 bg-secondary/10">
-            <Shield className="h-7 w-7 text-secondary" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-secondary/25 bg-gradient-to-br from-secondary/10 to-primary/5 shadow-glow">
+            <LogoMark className="h-11 w-11" />
           </div>
           <CardTitle className="text-xl">Create account</CardTitle>
           <CardDescription>Get access to real-time DDoS monitoring</CardDescription>

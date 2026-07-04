@@ -1,10 +1,24 @@
 """Application configuration — non-secrets hardcoded; JWT secret from environment only."""
 
 from pathlib import Path
+import os
 
 # Paths
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 CIC_DDOS_CSV_PATH = PROJECT_ROOT / "CICDDoS.csv"
+SIMULATOR_CSV_FALLBACK = PROJECT_ROOT / "artifacts" / "data" / "cicddos_sample.csv"
+
+
+def resolve_simulator_csv_path() -> Path:
+    """Full dataset locally, bundled sample in Docker/cloud."""
+    override = os.getenv("CIC_DDOS_CSV_PATH", "").strip()
+    if override:
+        return Path(override)
+    if CIC_DDOS_CSV_PATH.exists():
+        return CIC_DDOS_CSV_PATH
+    return SIMULATOR_CSV_FALLBACK
+
+
 ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
 MODELS_DIR = ARTIFACTS_DIR / "models"
 GCN_MODEL_PATH = MODELS_DIR / "gcn_best.pt"
@@ -23,7 +37,6 @@ PORT = 8000
 DEBUG = False
 
 # Security (override JWT_SECRET in .env for production)
-import os
 
 JWT_SECRET = os.getenv("JWT_SECRET", "halal-graph-ddos-dev-secret-change-me")
 JWT_ALGORITHM = "HS256"

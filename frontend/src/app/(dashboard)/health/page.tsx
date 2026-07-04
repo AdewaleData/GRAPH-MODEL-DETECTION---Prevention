@@ -49,13 +49,13 @@ export default function HealthPage() {
               {error ? (
                 <div className="flex items-center gap-2 text-danger">
                   <XCircle className="h-5 w-5" />
-                  <span>Offline — start the backend server</span>
+                  <span>Offline. Start the backend server.</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-success">
                   <CheckCircle2 className="h-5 w-5" />
                   <span>{health?.status ?? "Checking…"}</span>
-                  <Badge variant="muted">v{health?.version ?? "—"}</Badge>
+                  <Badge variant="muted">v{health?.version ?? "n/a"}</Badge>
                 </div>
               )}
             </CardContent>
@@ -82,7 +82,8 @@ export default function HealthPage() {
           <CardHeader>
             <CardTitle>Live Channels</CardTitle>
             <CardDescription>
-              WebSocket streams · Last ping {lastHeartbeat ? new Date(lastHeartbeat).toLocaleTimeString() : "—"}
+              WebSocket streams. Last ping{" "}
+              {lastHeartbeat ? new Date(lastHeartbeat).toLocaleTimeString() : "none yet"}
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

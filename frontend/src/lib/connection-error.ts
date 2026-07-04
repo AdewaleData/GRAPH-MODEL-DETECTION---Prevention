@@ -8,5 +8,5 @@ export function formatConnectionError(): string {
     return `Cannot reach the API at ${target}. Start the backend (port 8000) or set NEXT_PUBLIC_API_URL to your Render URL in frontend/.env.local, then restart the frontend.`;
   }
 
-  return `Cannot reach the API at ${target}. Confirm Render is Live (/health), set BACKEND_URL and NEXT_PUBLIC_API_URL on Vercel to your Render URL, and set CORS_ORIGINS on Render to your Vercel URL — then redeploy both.`;
+  return `Cannot reach the API at ${target}. Confirm Render is Live (/health), set BACKEND_URL and NEXT_PUBLIC_API_URL on Vercel to your Render URL, and set CORS_ORIGINS on Render to your Vercel URL, then redeploy both.`;
 }

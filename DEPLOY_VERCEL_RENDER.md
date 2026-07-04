@@ -80,7 +80,7 @@ Scroll to **Environment Variables** and add:
 |-----|--------|
 | `JWT_SECRET` | Generate: run `openssl rand -hex 32` locally, or use Render’s random generator |
 | `PRODUCTION` | `true` |
-| `LIVE_SIMULATOR_ENABLED` | `false` |
+| `LIVE_SIMULATOR_ENABLED` | `true` |
 | `MITIGATION_AUTO_ENABLED` | `true` |
 | `MITIGATION_MODE` | `simulated` |
 | `CORS_ORIGINS` | `https://placeholder.vercel.app` *(update after Vercel deploy)* |

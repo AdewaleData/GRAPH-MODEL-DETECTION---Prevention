@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Activity, AlertTriangle, Brain, Gauge, ShieldAlert, Zap } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { MetricCard } from "@/components/dashboard/metric-card";
@@ -10,50 +10,36 @@ import { CytoscapeGraph } from "@/components/graph/cytoscape-graph";
 import { SeverityBadge } from "@/components/dashboard/severity-badge";
 import { api } from "@/lib/api";
 import { formatPercent } from "@/lib/utils";
+import { displayMetric, useMetrics } from "@/hooks/use-metrics";
 import { useAuthStore } from "@/store/auth-store";
 import { useRealtimeStore } from "@/store/realtime-store";
-import type { MetricsSummary } from "@/types/api";
 
 export default function DashboardPage() {
   const token = useAuthStore((s) => s.token)!;
-  const [metrics, setMetrics] = useState<MetricsSummary | null>(null);
+  const { metrics, loading, error, refresh } = useMetrics(token);
   const alerts = useRealtimeStore((s) => s.alerts);
   const setAlerts = useRealtimeStore((s) => s.setAlerts);
   const liveGraph = useRealtimeStore((s) => s.liveGraph);
   const trafficEvents = useRealtimeStore((s) => s.trafficEvents);
-
-  const refreshMetrics = () => api.metrics(token).then(setMetrics).catch(console.error);
-
-  useEffect(() => {
-    refreshMetrics();
-    const t = setInterval(refreshMetrics, 5000);
-    const onSummary = (e: Event) => {
-      const detail = (e as CustomEvent<MetricsSummary>).detail;
-      if (detail?.total_predictions !== undefined) setMetrics(detail);
-    };
-    window.addEventListener("halal-metrics-summary", onSummary);
-    return () => {
-      clearInterval(t);
-      window.removeEventListener("halal-metrics-summary", onSummary);
-    };
-  }, [token]);
-
-  useEffect(() => {
-    if (trafficEvents.length) refreshMetrics();
-  }, [trafficEvents.length, token]);
+  const connected = useRealtimeStore((s) => s.connected);
+  const liveFeeds = Object.values(connected).filter(Boolean).length;
 
   useEffect(() => {
     api.alerts(token, false).then(setAlerts).catch(console.error);
   }, [token, setAlerts]);
 
+  useEffect(() => {
+    if (trafficEvents.length) refresh();
+  }, [trafficEvents.length, refresh]);
+
+  const loaded = !loading && !error;
   const chartData = useMemo(() => {
     const buckets: Record<string, { attacks: number; benign: number }> = {};
-    const events = trafficEvents.length ? trafficEvents : [];
     for (let i = 11; i >= 0; i--) {
       const label = `${i * 5}s`;
       buckets[label] = { attacks: 0, benign: 0 };
     }
-    events.slice(0, 60).forEach((e, idx) => {
+    trafficEvents.slice(0, 60).forEach((e, idx) => {
       const label = `${Math.floor(idx / 5) * 5}s`;
       if (!buckets[label]) buckets[label] = { attacks: 0, benign: 0 };
       if (e.is_attack) buckets[label].attacks++;
@@ -71,39 +57,62 @@ export default function DashboardPage() {
         subtitle="Real-time DDoS detection using Graph Neural Networks"
       />
       <main className="flex-1 overflow-y-auto p-6 space-y-6">
+        {error && (
+          <div className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+            Metrics unavailable: {error}. Check API connection and sign in again if needed.
+          </div>
+        )}
+
+        {!error && loaded && metrics?.total_predictions === 0 && liveFeeds === 0 && (
+          <div className="rounded-lg border border-secondary/30 bg-secondary/10 px-4 py-3 text-sm text-secondary">
+            Waiting for live traffic. The backend simulator streams CICDDoS samples every few seconds
+            once deployed with LIVE_SIMULATOR_ENABLED=true.
+          </div>
+        )}
+
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <MetricCard
             title="Total Scans"
-            value={metrics?.total_predictions ?? "—"}
+            value={displayMetric(metrics?.total_predictions, loaded)}
             subtitle="All traffic analyzed"
             icon={Activity}
             accent="primary"
           />
           <MetricCard
             title="Threats Found"
-            value={metrics?.attack_predictions ?? "—"}
-            subtitle={metrics ? formatPercent(metrics.attack_rate) + " of traffic" : ""}
+            value={displayMetric(metrics?.attack_predictions, loaded)}
+            subtitle={metrics ? `${formatPercent(metrics.attack_rate)} of traffic` : "Attack rate"}
             icon={ShieldAlert}
             trend="up"
             accent="danger"
           />
           <MetricCard
             title="Open Alerts"
-            value={metrics?.unacknowledged_alerts ?? alerts.filter((a) => !a.acknowledged).length}
+            value={
+              loaded
+                ? (metrics?.unacknowledged_alerts ?? alerts.filter((a) => !a.acknowledged).length)
+                : "..."
+            }
             subtitle="Needs your attention"
             icon={AlertTriangle}
             accent="secondary"
           />
           <MetricCard
             title="Active Blocks"
-            value={metrics?.active_mitigations ?? "—"}
-            subtitle={metrics ? `${metrics.flows_blocked} flows filtered` : "Prevention rules"}
+            value={displayMetric(metrics?.active_mitigations, loaded)}
+            subtitle={
+              metrics ? `${metrics.flows_blocked} flows filtered` : "Prevention rules"
+            }
             icon={ShieldAlert}
             accent="primary"
           />
           <MetricCard
             title="Response Time"
-            value={metrics ? `${metrics.avg_latency_ms.toFixed(1)}ms` : "—"}
+            value={
+              loaded && metrics
+                ? `${metrics.avg_latency_ms.toFixed(1)}ms`
+                : displayMetric(null, loaded, "...")
+            }
             subtitle={
               metrics?.avg_time_to_mitigate_ms
                 ? `Mitigate in ${metrics.avg_time_to_mitigate_ms.toFixed(0)}ms`
@@ -129,7 +138,7 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Brain className="h-4 w-4 text-secondary" />
-                AI Status
+                Model Status
               </CardTitle>
               <CardDescription>Models ready for inference</CardDescription>
             </CardHeader>
@@ -172,7 +181,7 @@ export default function DashboardPage() {
               <CardDescription>Latest security notifications</CardDescription>
             </CardHeader>
             <CardContent className="max-h-[360px] space-y-2 overflow-y-auto">
-              {(alerts.length ? alerts : []).slice(0, 8).map((a) => (
+              {alerts.slice(0, 8).map((a) => (
                 <div
                   key={a.id}
                   className="flex items-start justify-between gap-2 rounded-lg border border-border bg-surface/40 p-3 transition-all hover:border-secondary/30"
@@ -185,7 +194,9 @@ export default function DashboardPage() {
                 </div>
               ))}
               {!alerts.length && (
-                <p className="py-8 text-center text-sm text-muted">No alerts yet — you&apos;re all clear.</p>
+                <p className="py-8 text-center text-sm text-muted">
+                  No alerts yet. Your network looks clear.
+                </p>
               )}
             </CardContent>
           </Card>

@@ -5,6 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Halal Graph | Real-Time DDoS Detection",
   description: "Graph Neural Network powered DDoS detection platform",
+  icons: { icon: "/logo.svg", apple: "/logo.svg" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
