@@ -23,10 +23,13 @@ from ..schemas.predict import FlowRecord, PredictRequest
 from ..websockets.manager import ws_manager
 from .detection_service import detection_service
 from .metrics_service import MetricsService
+from .mitigation_service import mitigation_service
 
 logger = logging.getLogger(__name__)
 
 _SKIP_COLS = {"Source IP", "Destination IP", "Flow ID", "Timestamp", "Label"}
+# Demo pool — real CICDDoS sample often has a single attacker IP; spread across many for live prevention
+_ATTACKER_IP_POOL = [f"172.16.{i // 250}.{i % 250 + 1}" for i in range(50)]
 
 
 def _row_to_flow(row: pd.Series) -> FlowRecord:
@@ -90,6 +93,7 @@ class LiveSimulator:
 
         attack_by_victim: dict[str, list[FlowRecord]] = {}
         benign_by_victim: dict[str, list[FlowRecord]] = {}
+        attack_idx = 0
 
         for _, row in df.iterrows():
             try:
@@ -97,8 +101,13 @@ class LiveSimulator:
             except (KeyError, ValueError, TypeError):
                 continue
             label = str(row.get("Label", "BENIGN")).strip().upper()
-            bucket = attack_by_victim if label != "BENIGN" else benign_by_victim
-            bucket.setdefault(flow.destination_ip, []).append(flow)
+            if label != "BENIGN":
+                attacker = _ATTACKER_IP_POOL[attack_idx % len(_ATTACKER_IP_POOL)]
+                attack_idx += 1
+                flow = flow.model_copy(update={"source_ip": attacker})
+                attack_by_victim.setdefault(flow.destination_ip, []).append(flow)
+            else:
+                benign_by_victim.setdefault(flow.destination_ip, []).append(flow)
 
         self._attack_windows = [
             (v, flows) for v, flows in attack_by_victim.items() if len(flows) >= GRAPH_MIN_FLOWS
@@ -146,6 +155,13 @@ class LiveSimulator:
         victim, pool = picked
         batch_size = random.randint(GRAPH_MIN_FLOWS, min(28, len(pool)))
         flows = random.sample(pool, batch_size)
+        if demo_attack_traffic:
+            # Rotate attacker IPs each tick so new block rules appear over time
+            offset = self._tick_counter % len(_ATTACKER_IP_POOL)
+            flows = [
+                f.model_copy(update={"source_ip": _ATTACKER_IP_POOL[(offset + i) % len(_ATTACKER_IP_POOL)]})
+                for i, f in enumerate(flows)
+            ]
         model = random.choice(["gcn", "gat"] if LOAD_GAT else ["gcn"])
 
         request = PredictRequest(
@@ -184,6 +200,7 @@ class LiveSimulator:
                     "metrics",
                     {"type": "summary", **summary.model_dump()},
                 )
+                await mitigation_service.broadcast_prevention_stats(session)
             except Exception:
                 await session.rollback()
                 logger.exception("Live simulator tick failed")

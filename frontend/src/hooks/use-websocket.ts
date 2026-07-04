@@ -110,9 +110,11 @@ export function useWebSockets(enabled: boolean) {
           const d = data as Record<string, unknown>;
           if (d.type === "mitigation_applied") {
             pushMitigation(d as never);
-            toast.warning("Prevention action applied", {
-              description: `${d.action as string} on ${d.source_ip as string}`,
-            });
+            if (!d.auto_triggered) {
+              toast.warning("Prevention action applied", {
+                description: `${d.action as string} on ${d.source_ip as string}`,
+              });
+            }
           }
           if (d.type === "mitigation_revoked") {
             revokeMitigation(d.id as number);
@@ -122,6 +124,9 @@ export function useWebSockets(enabled: boolean) {
             toast.message("Blocked traffic filtered", {
               description: `${d.count as number} flow(s) from blocked sources dropped`,
             });
+          }
+          if (d.type === "prevention_stats") {
+            window.dispatchEvent(new CustomEvent("halal-prevention-stats", { detail: d }));
           }
         }),
       );

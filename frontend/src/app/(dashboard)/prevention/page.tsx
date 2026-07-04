@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Ban, Clock, RotateCcw, ShieldBan, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Header } from "@/components/layout/header";
@@ -19,6 +19,8 @@ const ACTION_COLORS: Record<string, string> = {
   quarantine: "bg-primary/20 text-primary border-primary/30",
 };
 
+const POLL_MS = 3000;
+
 export default function PreventionPage() {
   const token = useAuthStore((s) => s.token)!;
   const wsMitigations = useRealtimeStore((s) => s.mitigations);
@@ -27,7 +29,7 @@ export default function PreventionPage() {
   const [summary, setSummary] = useState<MitigationSummary | null>(null);
   const [stats, setStats] = useState<PreventionStats | null>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     Promise.all([
       api.mitigationActive(token),
       api.mitigationHistory(token, 50),
@@ -41,24 +43,38 @@ export default function PreventionPage() {
         setStats(st);
       })
       .catch(console.error);
-  };
+  }, [token, setMitigations]);
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 8000);
-    return () => clearInterval(t);
-  }, [token, setMitigations]);
+    const t = setInterval(load, POLL_MS);
+    const onLive = () => load();
+    window.addEventListener("halal-prevention-stats", onLive);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("halal-prevention-stats", onLive);
+    };
+  }, [load]);
 
-  const activeMerged = useMemo(() => {
-    const active = records.filter((r) => r.status === "active");
-    const wsActive = wsMitigations.filter((m) => m.status === "active");
+  useEffect(() => {
+    if (wsMitigations.length) load();
+  }, [wsMitigations.length, load]);
+
+  const historyMerged = useMemo(() => {
     const map = new Map<number, MitigationRecord>();
-    for (const r of active) map.set(r.id, r);
-    for (const w of wsActive) map.set(w.id, w);
+    for (const r of records) map.set(r.id, r);
+    for (const w of wsMitigations) {
+      if (w.id) map.set(w.id, w as MitigationRecord);
+    }
     return Array.from(map.values()).sort(
       (a, b) => new Date(b.applied_at).getTime() - new Date(a.applied_at).getTime(),
     );
   }, [records, wsMitigations]);
+
+  const activeMerged = useMemo(
+    () => historyMerged.filter((r) => r.status === "active"),
+    [historyMerged],
+  );
 
   async function revoke(id: number) {
     try {
@@ -76,11 +92,11 @@ export default function PreventionPage() {
         title="Attack Prevention"
         subtitle="Automated mitigation from GNN detection: block, rate-limit, or quarantine attacker sources"
       />
-      <main className="flex-1 overflow-y-auto p-6 space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <main className="flex-1 overflow-y-auto p-4 space-y-4 sm:p-6 sm:space-y-6">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           <MetricCard
             title="Active Rules"
-            value={summary?.total_active ?? 0}
+            value={summary?.total_active ?? activeMerged.length}
             subtitle={`${summary?.active_blocks ?? 0} blocks · ${summary?.active_rate_limits ?? 0} rate limits`}
             icon={ShieldBan}
             accent="danger"
@@ -115,7 +131,7 @@ export default function PreventionPage() {
               Auto-applied on attack patterns: critical blocks, high rate-limits, medium quarantine
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="max-h-[420px] space-y-3 overflow-y-auto">
             {activeMerged.map((r) => (
               <div
                 key={r.id}
@@ -153,7 +169,7 @@ export default function PreventionPage() {
         <Card>
           <CardHeader>
             <CardTitle>Mitigation History</CardTitle>
-            <CardDescription>Audit trail of all prevention actions</CardDescription>
+            <CardDescription>Live audit trail — updates every {POLL_MS / 1000}s and on each prevention action</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -169,7 +185,7 @@ export default function PreventionPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {records.slice(0, 30).map((r) => (
+                  {historyMerged.slice(0, 30).map((r) => (
                     <tr key={r.id} className="border-b border-border/50 text-muted hover:text-white">
                       <td className="py-2 pr-4 font-mono text-xs">{r.source_ip}</td>
                       <td className="py-2 pr-4 font-mono text-xs">{r.victim_ip}</td>
@@ -183,7 +199,7 @@ export default function PreventionPage() {
                   ))}
                 </tbody>
               </table>
-              {!records.length && (
+              {!historyMerged.length && (
                 <p className="py-8 text-center text-muted">No mitigation history yet.</p>
               )}
             </div>

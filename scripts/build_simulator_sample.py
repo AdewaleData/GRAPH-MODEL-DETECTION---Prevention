@@ -36,6 +36,10 @@ def main() -> None:
             break
 
     mixed = pd.concat(chunks, ignore_index=True).sample(frac=1, random_state=42)
+    attack_mask = mixed["Label"].astype(str).str.upper() != "BENIGN"
+    pool = [f"172.16.{i // 250}.{i % 250 + 1}" for i in range(50)]
+    attack_n = int(attack_mask.sum())
+    mixed.loc[attack_mask, "Source IP"] = [pool[i % len(pool)] for i in range(attack_n)]
     OUT.parent.mkdir(parents=True, exist_ok=True)
     mixed.to_csv(OUT, index=False)
     print(f"Wrote {len(mixed)} rows -> {OUT}")

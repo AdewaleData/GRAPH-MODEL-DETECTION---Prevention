@@ -69,7 +69,10 @@ class MitigationService:
         repo = MitigationRepository(session)
 
         for source_ip, score, meta in ranked:
+            blocked_flows = sum(1 for f in flows if f.source_ip == source_ip)
             if blocklist_service.is_blocked(source_ip):
+                if action_type == MitigationActionType.block:
+                    _flows_blocked_count += blocked_flows
                 continue
 
             reason = (
@@ -91,8 +94,24 @@ class MitigationService:
             )
             payloads.append(record)
             if action_type == MitigationActionType.block:
-                _flows_blocked_count += sum(1 for f in flows if f.source_ip == source_ip)
+                _flows_blocked_count += blocked_flows
+        if ranked:
+            await self.broadcast_prevention_stats(session)
         return payloads
+
+    async def broadcast_prevention_stats(self, session: AsyncSession) -> None:
+        """Push live prevention counters to WebSocket clients."""
+        summary = await self.summary(session)
+        ps = self.prevention_stats
+        await ws_manager.broadcast(
+            "mitigation",
+            {
+                "type": "prevention_stats",
+                "flows_blocked": ps["flows_blocked"],
+                "flows_allowed": ps["flows_allowed"],
+                "summary": summary,
+            },
+        )
 
     async def apply_manual(
         self,
